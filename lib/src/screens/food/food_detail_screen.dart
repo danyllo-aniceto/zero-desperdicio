@@ -5,7 +5,7 @@ import '../../providers/food_list_provider.dart';
 
 class FoodDetailScreen extends ConsumerWidget {
   final FoodItem item;
-  const FoodDetailScreen({Key? key, required this.item}) : super(key: key);
+  const FoodDetailScreen({super.key, required this.item});
 
   String _formatDate(DateTime dt) {
     return '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
