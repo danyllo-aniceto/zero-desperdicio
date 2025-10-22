@@ -1,3 +1,4 @@
+// lib/src/screens/food/food_list_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:zero_desperdicio/src/models/doacao_model.dart';
@@ -17,58 +18,52 @@ class _FoodListScreenState extends ConsumerState<FoodListScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   String _searchQuery = '';
-  DateTime? _validityFilter; // se null -> sem filtro
+  DateTime? _validityFilter;
+  late ScrollController _scrollController;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     _tabController.addListener(() {
-      // rebuild para atualizar o texto de contagem quando trocar de tab
       if (mounted) setState(() {});
     });
+    _scrollController = ScrollController();
+    _scrollController.addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    final state = ref.read(foodListProvider);
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+      if (!state.loading && state.hasMore) {
+        ref.read(foodListProvider.notifier).loadMore();
+      }
+    }
   }
 
   @override
   void dispose() {
     _tabController.dispose();
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
     super.dispose();
   }
 
-  // Aplica filtros locais (search + validade) sobre a lista de doações
   List<Doacao> _applyFilters(List<Doacao> list, {required bool onlyMine}) {
     final user = AuthService.instance.currentUser.value;
     return list.where((d) {
-      // isOwner: true se a doação foi criada pelo usuário logado
       final bool isOwner = user != null && user.id == d.idUsuarioDoa.toString();
-
-      // --- filtro por tab ---
-      // se estamos na tab "Minhas doações", mostramos somente as doações cujo dono é o usuário
-      // se estamos na tab "Disponíveis", mostramos somente doações NÃO do usuário e que não estejam 'Concluída'
       final bool tabMatch = onlyMine ? isOwner : (!isOwner && d.status.toLowerCase() != 'concluída');
-
       if (!tabMatch) return false;
-
-      // --- filtro por busca no nome do alimento ---
       if (_searchQuery.isNotEmpty) {
         final q = _searchQuery.toLowerCase();
         final nome = d.alimento.nome.toLowerCase();
         if (!nome.contains(q)) return false;
       }
-
-      // --- filtro por validade (datepicker) ---
       if (_validityFilter != null) {
-        final deadline = DateTime(
-          _validityFilter!.year,
-          _validityFilter!.month,
-          _validityFilter!.day,
-          23,
-          59,
-          59,
-        );
+        final deadline = DateTime(_validityFilter!.year, _validityFilter!.month, _validityFilter!.day, 23, 59, 59);
         if (d.alimento.validade.isAfter(deadline)) return false;
       }
-
       return true;
     }).toList();
   }
@@ -95,15 +90,16 @@ class _FoodListScreenState extends ConsumerState<FoodListScreen>
 
   @override
   Widget build(BuildContext context) {
-    final doacoes = ref.watch(foodListProvider);
+    final paginated = ref.watch(foodListProvider);
+    final allLoaded = paginated.items;
     final user = AuthService.instance.currentUser.value;
+    final pageSize = ref.read(foodListProvider.notifier).pageSize;
+    final totalPages = (paginated.totalCount / pageSize).ceil();
 
-    // listas filtradas
-    final disponiveis = _applyFilters(doacoes, onlyMine: false);
-    final minhas = _applyFilters(doacoes, onlyMine: true);
+    final disponiveis = _applyFilters(allLoaded, onlyMine: false);
+    final minhas = _applyFilters(allLoaded, onlyMine: true);
 
-    // cálculo para "Mostrando X de Y disponíveis"
-    final totalAvailable = doacoes.where((d) {
+    final totalAvailableLoaded = allLoaded.where((d) {
       final isOwner = user != null && user.id == d.idUsuarioDoa.toString();
       return !isOwner && d.status.toLowerCase() != 'concluída';
     }).length;
@@ -124,115 +120,95 @@ class _FoodListScreenState extends ConsumerState<FoodListScreen>
           ],
         ),
       ),
-
-      // conteúdo com campo de busca e filtro
       body: Column(
         children: [
-          // filtros - search + validade + limpar
+          // filtros
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
               children: [
-                // Search field (expand)
                 Expanded(
                   child: TextField(
                     decoration: InputDecoration(
                       hintText: 'Pesquisar por nome do alimento',
                       prefixIcon: const Icon(Icons.search),
                       suffixIcon: _searchQuery.isNotEmpty
-                          ? IconButton(
-                              icon: const Icon(Icons.clear),
-                              onPressed: () => setState(() => _searchQuery = ''),
-                            )
+                          ? IconButton(icon: const Icon(Icons.clear), onPressed: () => setState(() => _searchQuery = ''))
                           : null,
                       filled: true,
                       fillColor: Colors.white,
                       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
-                      ),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                     ),
                     onChanged: (v) => setState(() => _searchQuery = v),
-                    controller: TextEditingController.fromValue(
-                      TextEditingValue(
-                        text: _searchQuery,
-                        selection: TextSelection.collapsed(offset: _searchQuery.length),
-                      ),
-                    ),
+                    controller: TextEditingController.fromValue(TextEditingValue(text: _searchQuery, selection: TextSelection.collapsed(offset: _searchQuery.length))),
                   ),
                 ),
                 const SizedBox(width: 12),
-
-                // Validity filter button (usa DatePicker)
                 InkWell(
                   onTap: () => _pickValidityDate(context),
                   borderRadius: BorderRadius.circular(12),
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4)],
-                    ),
+                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4)]),
                     child: Row(
                       children: [
                         const Icon(Icons.calendar_today, size: 18, color: Colors.green),
                         const SizedBox(width: 8),
-                        Text(
-                          _validityFilter == null
-                              ? 'Validade'
-                              : '${_validityFilter!.day}/${_validityFilter!.month}/${_validityFilter!.year}',
-                          style: const TextStyle(color: Colors.black87),
-                        ),
+                        Text(_validityFilter == null ? 'Validade' : '${_validityFilter!.day}/${_validityFilter!.month}/${_validityFilter!.year}', style: const TextStyle(color: Colors.black87)),
                         if (_validityFilter != null) ...[
                           const SizedBox(width: 6),
-                          GestureDetector(
-                            onTap: () => setState(() => _validityFilter = null),
-                            child: const Icon(Icons.close, size: 18, color: Colors.black45),
-                          ),
+                          GestureDetector(onTap: () => setState(() => _validityFilter = null), child: const Icon(Icons.close, size: 18, color: Colors.black45)),
                         ]
                       ],
                     ),
                   ),
                 ),
                 const SizedBox(width: 8),
-
-                // Clear all filters
-                IconButton(
-                  tooltip: 'Limpar filtros',
-                  icon: const Icon(Icons.filter_alt_off),
-                  onPressed: _clearFilters,
-                ),
+                IconButton(tooltip: 'Limpar filtros', icon: const Icon(Icons.filter_alt_off), onPressed: _clearFilters),
               ],
             ),
           ),
 
-          // show counts when on Disponíveis tab
           if (_tabController.index == 0)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'Mostrando $filteredAvailable de $totalAvailable disponíveis',
-                  style: const TextStyle(color: Colors.black54, fontSize: 13),
-                ),
-              ),
+              child: Align(alignment: Alignment.centerLeft, child: Text('Mostrando $filteredAvailable de ${paginated.totalCount} disponíveis', style: const TextStyle(color: Colors.black54, fontSize: 13))),
             ),
 
           const SizedBox(height: 8),
 
-          // conteúdo das tabs
+          // lista + páginas
           Expanded(
             child: TabBarView(
               controller: _tabController,
               children: [
-                // Tab 0: Disponíveis
-                _buildListView(disponiveis),
+                _buildListView(disponiveis, paginated),
+                _buildListView(minhas, paginated),
+              ],
+            ),
+          ),
 
-                // Tab 1: Minhas doações
-                _buildListView(minhas),
+          // BARRA DE PAGINAÇÃO POR BOTÕES (Anterior / Página X / Próximo)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            color: Colors.transparent,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ElevatedButton.icon(
+                  onPressed: (paginated.page > 1 && !paginated.loading) ? () => ref.read(foodListProvider.notifier).prevPage() : null,
+                  icon: const Icon(Icons.arrow_back_ios_new, size: 14),
+                  label: const Text('Anterior'),
+                ),
+                const SizedBox(width: 12),
+                Text('Página ${paginated.page == 0 ? 1 : paginated.page} de ${totalPages == 0 ? 1 : totalPages}'),
+                const SizedBox(width: 12),
+                ElevatedButton.icon(
+                  onPressed: (paginated.hasMore && !paginated.loading) ? () => ref.read(foodListProvider.notifier).nextPage() : null,
+                  icon: const Icon(Icons.arrow_forward_ios, size: 14),
+                  label: const Text('Próximo'),
+                ),
               ],
             ),
           ),
@@ -241,57 +217,53 @@ class _FoodListScreenState extends ConsumerState<FoodListScreen>
     );
   }
 
-  Widget _buildListView(List<Doacao> list) {
-    if (list.isEmpty) {
-      return const Center(
-        child: Text(
-          'Nenhum resultado.',
-          style: TextStyle(fontSize: 16, color: Colors.black54),
-        ),
-      );
+  Widget _buildListView(List<Doacao> list, PaginatedDoacoesState paginated) {
+    if (list.isEmpty && !paginated.loading) {
+      return const Center(child: Text('Nenhum resultado.', style: TextStyle(fontSize: 16, color: Colors.black54)));
     }
 
     return RefreshIndicator(
       onRefresh: () async {
-        await ref.read(foodListProvider.notifier).load();
+        await ref.read(foodListProvider.notifier).refresh();
       },
       child: ListView.builder(
+        controller: _scrollController,
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.only(top: 8, bottom: 80),
-        itemCount: list.length,
+        padding: const EdgeInsets.only(top: 8, bottom: 16),
+        itemCount: list.length + (paginated.loading ? 1 : 0),
         itemBuilder: (context, i) {
+          if (i >= list.length) {
+            return const Padding(
+              padding: EdgeInsets.symmetric(vertical: 18),
+              child: Center(child: CircularProgressIndicator()),
+            );
+          }
           final doacao = list[i];
           return FoodCard(
             item: doacao,
             onTap: () async {
-              await Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => FoodDetailScreen(doacao: doacao)),
-              );
+              final result = await Navigator.push(context, MaterialPageRoute(builder: (_) => FoodDetailScreen(doacao: doacao)));
+              // se veio resultado de edição/remocao (opcional) podemos tratar aqui (não obrigatório)
+              if (result == 'updated' || result == 'removed') {
+                await ref.read(foodListProvider.notifier).loadPage(ref.read(foodListProvider).page == 0 ? 1 : ref.read(foodListProvider).page);
+              }
             },
-            onDelete: () {
-              // confirmação antes de remover
-              showDialog(
+            onDelete: () async {
+              final confirm = await showDialog<bool>(
                 context: context,
                 builder: (_) => AlertDialog(
                   title: const Text('Remover doação'),
                   content: const Text('Tem certeza que deseja remover esta doação?'),
                   actions: [
-                    TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
-                    TextButton(
-                      onPressed: () {
-                        // remove do provider (mock)
-                        ref.read(foodListProvider.notifier).remove(doacao.id);
-                        Navigator.pop(context); // fecha dialog
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('${doacao.alimento.nome} removido (mock).')),
-                        );
-                      },
-                      child: const Text('Remover'),
-                    ),
+                    TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
+                    TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Remover')),
                   ],
                 ),
               );
+              if (confirm == true) {
+                await ref.read(foodListProvider.notifier).removeDoacao(doacao.id);
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${doacao.alimento.nome} removido (mock).')));
+              }
             },
           );
         },

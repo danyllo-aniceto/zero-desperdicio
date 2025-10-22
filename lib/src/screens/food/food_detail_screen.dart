@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:zero_desperdicio/src/models/doacao_model.dart';
+import 'package:zero_desperdicio/src/screens/food/food_edit_screen.dart';
 import 'compose_message_screen.dart';
 import 'package:zero_desperdicio/src/services/auth_service.dart';
 
@@ -98,8 +99,15 @@ class FoodDetailScreen extends StatelessWidget {
             // se for minha doação, mostrar só ações relacionadas ao dono (ex: editar, marcar como concluída)
             Row(children: [
               ElevatedButton.icon(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Você é o dono desta doação.'))); 
+                onPressed: () async {
+                  final updated = await Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => FoodEditScreen(doacao: doacao)),
+                  );
+                  if (updated != null && updated is Doacao) {
+                    // volta para a tela anterior indicando atualização
+                    Navigator.pop(context, 'updated');
+                  }
                 },
                 icon: const Icon(Icons.edit),
                 label: const Text('Editar'),
