@@ -1,36 +1,20 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../data/mock_repository.dart';
-import '../models/food_item.dart';
+import 'package:zero_desperdicio/src/models/doacao_model.dart';
+import 'package:zero_desperdicio/src/services/mock_service.dart';
 
-/// Provider para o repositório simulado
-final mockRepoProvider = Provider<MockRepository>((ref) => MockRepository());
-
-/// Provider que mantém a lista de alimentos em memória
-final foodListProvider = StateNotifierProvider<FoodListNotifier, List<FoodItem>>(
-  (ref) => FoodListNotifier(ref),
-);
-
-class FoodListNotifier extends StateNotifier<List<FoodItem>> {
-  final Ref ref;
-  FoodListNotifier(this.ref) : super([]) {
-    load();
-  }
+class FoodListNotifier extends StateNotifier<List<Doacao>> {
+  FoodListNotifier() : super([]);
 
   Future<void> load() async {
-    final repo = ref.read(mockRepoProvider);
-    final items = await repo.fetchAll();
-    state = items;
+    await Future.delayed(const Duration(milliseconds: 400)); // Simula delay
+    state = MockService.doacoes;
   }
 
-  Future<void> add(FoodItem item) async {
-    final repo = ref.read(mockRepoProvider);
-    await repo.add(item);
-    await load();
-  }
-
-  Future<void> remove(String id) async {
-    final repo = ref.read(mockRepoProvider);
-    await repo.delete(id);
-    await load();
+  void remove(int doacaoId) {
+    state = state.where((d) => d.id != doacaoId).toList();
   }
 }
+
+final foodListProvider = StateNotifierProvider<FoodListNotifier, List<Doacao>>(
+  (ref) => FoodListNotifier()..load(),
+);

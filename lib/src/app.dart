@@ -1,6 +1,9 @@
+// lib/src/app.dart
 import 'package:flutter/material.dart';
-import 'core/theme/app_theme.dart';
-import 'screens/home/home_screen.dart';
+import 'package:zero_desperdicio/src/core/theme/app_theme.dart';
+import 'package:zero_desperdicio/src/screens/auth/login_screen.dart';
+import 'package:zero_desperdicio/src/screens/home/dashboard_screen.dart';
+import 'package:zero_desperdicio/src/services/auth_service.dart';
 
 class App extends StatelessWidget {
   const App({super.key});
@@ -9,9 +12,19 @@ class App extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Zero Desperdício',
-      theme: AppTheme.lightTheme,
       debugShowCheckedModeBanner: false,
-      home: const HomeScreen(),
+      theme: AppTheme.lightTheme,
+      // Mostra Login se não houver usuário; caso contrário, Dashboard.
+      home: ValueListenableBuilder(
+        valueListenable: AuthService.instance.currentUser,
+        builder: (context, dynamic user, _) {
+          if (user == null) {
+            return const LoginScreen();
+          } else {
+            return const DashboardScreen();
+          }
+        },
+      ),
     );
   }
 }
