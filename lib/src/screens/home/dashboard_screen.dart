@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:zero_desperdicio/src/models/user.dart';
 import 'package:zero_desperdicio/src/screens/auth/login_screen.dart';
+import 'package:zero_desperdicio/src/screens/food/food_form_screen.dart';
 import 'package:zero_desperdicio/src/screens/food/food_list_screen.dart';
 import 'package:zero_desperdicio/src/services/auth_service.dart';
 import 'donate_form.dart';
@@ -153,7 +154,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                     onTap: () => Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const MyDonationsScreen()),
+                      MaterialPageRoute(builder: (_) => const DonateFormScreen()),
                     ),
                   ),
                 ],

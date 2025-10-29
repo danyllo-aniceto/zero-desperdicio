@@ -17,7 +17,7 @@ class MockService {
       'Sardinha', 'Atum', 'Frutas sortidas', 'Legumes sortidos', 'Pães'
     ];
     final imgs = [
-      'https://images.unsplash.com/photo-1604908177522-21f08a2b5b7f?auto=format&fit=crop&w=800&q=60',
+      'https://coopsp.vtexassets.com/arquivos/ids/222136/7896006711155.jpg?v=637919570634730000',
       'https://images.unsplash.com/photo-1589307000046-7a4f5a9ce7d3?auto=format&fit=crop&w=800&q=60',
       'https://images.unsplash.com/photo-1564767609342-620cb19b2357?auto=format&fit=crop&w=800&q=60',
       'https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=800&q=60',
@@ -75,5 +75,42 @@ class MockService {
     await Future.delayed(const Duration(milliseconds: 250));
     final idx = doacoes.indexWhere((d) => d.id == updated.id);
     if (idx != -1) doacoes[idx] = updated;
+  }
+
+     /// Cria uma nova doação com alimento e associa ao usuário logado
+  static Future<Doacao> addDoacaoMock({
+    required int idUsuarioDoa,
+    required String nomeAlimento,
+    required String descricao,
+    required DateTime validade,
+    required int quantidade,
+    String? imageUrl,
+    String status = 'Disponível',
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 400));
+
+    // cria alimento novo (mock)
+    final novoAlimento = Alimento(
+      id: alimentos.length + 1,
+      nome: nomeAlimento,
+      descricao: descricao,
+      validade: validade,
+      imageUrl: imageUrl,
+    );
+    alimentos.add(novoAlimento);
+
+    // cria doação
+    final novaDoacao = Doacao(
+      id: doacoes.length + 1,
+      idUsuarioDoa: idUsuarioDoa,
+      idUsuarioRec: 0,
+      alimento: novoAlimento,
+      quantidade: quantidade,
+      dataCadastro: DateTime.now(),
+      status: status,
+    );
+
+    doacoes.add(novaDoacao);
+    return novaDoacao;
   }
 }

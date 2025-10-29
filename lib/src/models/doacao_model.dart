@@ -2,8 +2,8 @@ import 'alimento_model.dart';
 
 class Doacao {
   final int id;
-  final int idUsuarioRec;
   final int idUsuarioDoa;
+  final int idUsuarioRec;
   final Alimento alimento;
   final int quantidade;
   final DateTime dataCadastro;
@@ -11,8 +11,8 @@ class Doacao {
 
   const Doacao({
     required this.id,
-    required this.idUsuarioRec,
     required this.idUsuarioDoa,
+    required this.idUsuarioRec,
     required this.alimento,
     required this.quantidade,
     required this.dataCadastro,
@@ -21,21 +21,42 @@ class Doacao {
 
   factory Doacao.fromJson(Map<String, dynamic> json) => Doacao(
         id: json['id'],
-        idUsuarioRec: json['id_usuarioRec'],
-        idUsuarioDoa: json['id_usuarioDoa'],
+        idUsuarioDoa: json['idUsuarioDoa'],
+        idUsuarioRec: json['idUsuarioRec'],
         alimento: Alimento.fromJson(json['alimento']),
         quantidade: json['quantidade'],
-        dataCadastro: DateTime.parse(json['data_cadastro']),
+        dataCadastro: DateTime.parse(json['dataCadastro']),
         status: json['status'],
       );
 
   Map<String, dynamic> toJson() => {
         'id': id,
-        'id_usuarioRec': idUsuarioRec,
-        'id_usuarioDoa': idUsuarioDoa,
+        'idUsuarioDoa': idUsuarioDoa,
+        'idUsuarioRec': idUsuarioRec,
         'alimento': alimento.toJson(),
         'quantidade': quantidade,
-        'data_cadastro': dataCadastro.toIso8601String(),
+        'dataCadastro': dataCadastro.toIso8601String(),
         'status': status,
       };
+
+  /// Método copyWith — permite alterar campos específicos
+  Doacao copyWith({
+    int? id,
+    int? idUsuarioDoa,
+    int? idUsuarioRec,
+    Alimento? alimento,
+    int? quantidade,
+    DateTime? dataCadastro,
+    String? status,
+  }) {
+    return Doacao(
+      id: id ?? this.id,
+      idUsuarioDoa: idUsuarioDoa ?? this.idUsuarioDoa,
+      idUsuarioRec: idUsuarioRec ?? this.idUsuarioRec,
+      alimento: alimento ?? this.alimento,
+      quantidade: quantidade ?? this.quantidade,
+      dataCadastro: dataCadastro ?? this.dataCadastro,
+      status: status ?? this.status,
+    );
+  }
 }

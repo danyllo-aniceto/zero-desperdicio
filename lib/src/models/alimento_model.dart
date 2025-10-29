@@ -3,7 +3,7 @@ class Alimento {
   final String nome;
   final String descricao;
   final DateTime validade;
-  final String? imageUrl; // novo
+  final String? imageUrl;
 
   const Alimento({
     required this.id,
@@ -28,4 +28,21 @@ class Alimento {
         'validade': validade.toIso8601String(),
         'imageUrl': imageUrl,
       };
+
+  /// Permite criar uma cópia alterando apenas campos específicos
+  Alimento copyWith({
+    int? id,
+    String? nome,
+    String? descricao,
+    DateTime? validade,
+    String? imageUrl,
+  }) {
+    return Alimento(
+      id: id ?? this.id,
+      nome: nome ?? this.nome,
+      descricao: descricao ?? this.descricao,
+      validade: validade ?? this.validade,
+      imageUrl: imageUrl ?? this.imageUrl,
+    );
+  }
 }

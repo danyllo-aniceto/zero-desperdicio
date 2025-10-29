@@ -1,8 +1,11 @@
+// lib/src/screens/food/food_detail_screen.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:zero_desperdicio/src/models/doacao_model.dart';
 import 'package:zero_desperdicio/src/screens/food/food_edit_screen.dart';
 import 'compose_message_screen.dart';
 import 'package:zero_desperdicio/src/services/auth_service.dart';
+import 'package:zero_desperdicio/src/providers/food_list_provider.dart';
 
 class FoodDetailScreen extends StatelessWidget {
   final Doacao doacao;
@@ -19,7 +22,6 @@ class FoodDetailScreen extends StatelessWidget {
             title: const Text('Enviar email'),
             onTap: () {
               Navigator.pop(context);
-              // redireciona para composição via email no ComposeMessageScreen
               Navigator.push(context, MaterialPageRoute(builder: (_) => ComposeMessageScreen(doacao: doacao, action: 'receber')));
             },
           ),
@@ -54,7 +56,6 @@ class FoodDetailScreen extends StatelessWidget {
       body: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          // imagem grande se houver
           if (item.imageUrl != null && item.imageUrl!.isNotEmpty)
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
@@ -70,42 +71,39 @@ class FoodDetailScreen extends StatelessWidget {
           Text('Quantidade: ${doacao.quantidade}', style: const TextStyle(fontSize: 15, color: Colors.black54)),
           const SizedBox(height: 20),
 
-          // Se NÃO for minha doação, mostro os botões que levam para a tela de composição
           if (!_isOwner) ...[
             Row(children: [
               Expanded(
                 child: ElevatedButton.icon(
                   onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => ComposeMessageScreen(doacao: doacao, action: 'receber')),
-                    );
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => ComposeMessageScreen(doacao: doacao, action: 'receber')));
                   },
                   icon: const Icon(Icons.handshake),
                   label: const Text('Quero receber'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  ),
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.green, padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12)),
                 ),
               ),
               const SizedBox(width: 12),
-              IconButton(
-                onPressed: () => _showMessageOptions(context),
-                icon: const Icon(Icons.message, color: Colors.green),
-              ),
+              IconButton(onPressed: () => _showMessageOptions(context), icon: const Icon(Icons.message, color: Colors.green)),
             ]),
           ] else ...[
-            // se for minha doação, mostrar só ações relacionadas ao dono (ex: editar, marcar como concluída)
             Row(children: [
               ElevatedButton.icon(
                 onPressed: () async {
-                  final updated = await Navigator.push(
+                  // Abre a tela de edição e espera a doação atualizada (Doacao) como retorno
+                  final updated = await Navigator.push<Doacao>(
                     context,
                     MaterialPageRoute(builder: (_) => FoodEditScreen(doacao: doacao)),
                   );
-                  if (updated != null && updated is Doacao) {
-                    // volta para a tela anterior indicando atualização
+
+                  if (updated != null) {
+                    // 1) atualiza UI imediatamente (opcional)
+                    ProviderScope.containerOf(context, listen: false).read(foodListProvider.notifier).updateDoacao(updated);
+
+                    // 2) persiste no mock e recarrega a página atual
+                    await ProviderScope.containerOf(context, listen: false).read(foodListProvider.notifier).editDoacao(updated);
+
+                    // 3) fecha a tela de detalhes retornando info para a lista
                     Navigator.pop(context, 'updated');
                   }
                 },
