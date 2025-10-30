@@ -49,12 +49,26 @@ class _FoodListScreenState extends ConsumerState<FoodListScreen>
     super.dispose();
   }
 
+  /// Filtra a lista:
+  /// - if onlyMine == true -> mostra apenas itens onde sou dono **e não estão concluídos**
+  /// - if onlyMine == false -> mostra itens onde NÃO sou dono, NÃO estão concluídos e NÃO foram atribuídos (idUsuarioRec == 0)
   List<Doacao> _applyFilters(List<Doacao> list, {required bool onlyMine}) {
     final user = AuthService.instance.currentUser.value;
     return list.where((d) {
       final bool isOwner = user != null && user.id == d.idUsuarioDoa.toString();
-      final bool tabMatch = onlyMine ? isOwner : (!isOwner && d.status.toLowerCase() != 'concluída');
-      if (!tabMatch) return false;
+      final bool isConcluded = d.status.toLowerCase().contains('conclu');
+      final bool isAssigned = d.idUsuarioRec != 0;
+
+      if (onlyMine) {
+        if (!isOwner) return false;
+        if (isConcluded) return false; // remove concluídas da aba "Minhas doações"
+      } else {
+        // Disponíveis -> não sou dono, não concluída, não atribuída
+        if (isOwner) return false;
+        if (isConcluded) return false;
+        if (isAssigned) return false;
+      }
+
       if (_searchQuery.isNotEmpty) {
         final q = _searchQuery.toLowerCase();
         final nome = d.alimento.nome.toLowerCase();
@@ -96,12 +110,16 @@ class _FoodListScreenState extends ConsumerState<FoodListScreen>
     final pageSize = ref.read(foodListProvider.notifier).pageSize;
     final totalPages = (paginated.totalCount / pageSize).ceil();
 
+    // listas já filtradas para exibição
     final disponiveis = _applyFilters(allLoaded, onlyMine: false);
     final minhas = _applyFilters(allLoaded, onlyMine: true);
 
+    // total realmente disponíveis (considerando apenas os items carregados)
     final totalAvailableLoaded = allLoaded.where((d) {
       final isOwner = user != null && user.id == d.idUsuarioDoa.toString();
-      return !isOwner && d.status.toLowerCase() != 'concluída';
+      final isConcluded = d.status.toLowerCase().contains('conclu');
+      final isAssigned = d.idUsuarioRec != 0;
+      return !isOwner && !isConcluded && !isAssigned;
     }).length;
     final filteredAvailable = disponiveis.length;
 
@@ -173,7 +191,13 @@ class _FoodListScreenState extends ConsumerState<FoodListScreen>
           if (_tabController.index == 0)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Align(alignment: Alignment.centerLeft, child: Text('Mostrando $filteredAvailable de ${paginated.totalCount} disponíveis', style: const TextStyle(color: Colors.black54, fontSize: 13))),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Mostrando $filteredAvailable de $totalAvailableLoaded disponíveis para você receber',
+                  style: const TextStyle(color: Colors.black54, fontSize: 13),
+                ),
+              ),
             ),
 
           const SizedBox(height: 8),

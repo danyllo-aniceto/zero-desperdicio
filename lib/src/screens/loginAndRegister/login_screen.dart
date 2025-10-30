@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:zero_desperdicio/src/core/theme/app_theme.dart';
 import 'package:zero_desperdicio/src/models/user.dart';
 import 'package:zero_desperdicio/src/screens/home/dashboard_screen.dart';
+import 'package:zero_desperdicio/src/screens/loginAndRegister/register_screen.dart';
 import 'package:zero_desperdicio/src/services/auth_service.dart';
-import 'register_screen.dart';
+// Se tiver tela de registro, ajuste import; senão comente
+// import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -20,26 +21,41 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _tryLogin() async {
     setState(() => _loading = true);
-    final ok = await AuthService.instance.login(
-      email: _emailCtrl.text.trim(),
-      password: _passCtrl.text,
-      expectedType: _selectedType,
-    );
-    setState(() => _loading = false);
-    if (ok) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const DashboardScreen()),
+
+    try {
+      final ok = await AuthService.instance.login(
+        email: _emailCtrl.text.trim(),
+        password: _passCtrl.text,
+        expectedType: _selectedType,
       );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Credenciais inválidas')),
-      );
+
+      if (ok) {
+        if (!mounted) return;
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const DashboardScreen()),
+        );
+      } else {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Credenciais inválidas')),
+        );
+      }
+    } catch (e, st) {
+      // caso algo inesperado aconteça
+      // ignore: avoid_print
+      print('Login error: $e\n$st');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erro ao tentar logar: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Scaffold(
       backgroundColor: const Color(0xFFF7F8FA),
       body: Center(
@@ -48,7 +64,6 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // LOGO
               Container(
                 height: 100,
                 width: 100,
@@ -57,17 +72,11 @@ class _LoginScreenState extends State<LoginScreen> {
                   shape: BoxShape.circle,
                   color: Colors.white,
                   boxShadow: [
-                    BoxShadow(
-                      blurRadius: 8,
-                      color: Colors.black12,
-                      offset: Offset(0, 3),
-                    ),
+                    BoxShadow(blurRadius: 8, color: Colors.black12, offset: Offset(0, 3))
                   ],
                 ),
                 child: const Icon(Icons.volunteer_activism, size: 60, color: Colors.green),
               ),
-
-              // CARD DE LOGIN
               Card(
                 elevation: 4,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -77,18 +86,12 @@ class _LoginScreenState extends State<LoginScreen> {
                     children: [
                       TextField(
                         controller: _emailCtrl,
-                        decoration: const InputDecoration(
-                          labelText: 'Email',
-                          prefixIcon: Icon(Icons.email_outlined),
-                        ),
+                        decoration: const InputDecoration(labelText: 'Email', prefixIcon: Icon(Icons.email_outlined)),
                       ),
                       const SizedBox(height: 16),
                       TextField(
                         controller: _passCtrl,
-                        decoration: const InputDecoration(
-                          labelText: 'Senha',
-                          prefixIcon: Icon(Icons.lock_outline),
-                        ),
+                        decoration: const InputDecoration(labelText: 'Senha', prefixIcon: Icon(Icons.lock_outline)),
                         obscureText: true,
                       ),
                       const SizedBox(height: 16),
@@ -120,21 +123,24 @@ class _LoginScreenState extends State<LoginScreen> {
                           onPressed: _loading ? null : _tryLogin,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.green,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
-                          child: _loading
-                              ? const CircularProgressIndicator(color: Colors.white)
-                              : const Text('Entrar', style: TextStyle(fontSize: 16)),
+                          child: _loading ? const CircularProgressIndicator(color: Colors.white) : const Text('Entrar', style: TextStyle(fontSize: 16)),
                         ),
                       ),
                       const SizedBox(height: 16),
                       TextButton(
-                        onPressed: () {
-                          Navigator.of(context).push(
+                        onPressed: () async {
+                          final result = await Navigator.of(context).push(
                             MaterialPageRoute(builder: (_) => const RegisterScreen()),
                           );
+                          // se o registro retornou email, pré-preenche para facilitar o login
+                          if (result is Map && result['email'] != null) {
+                            _emailCtrl.text = result['email'] as String;
+                            if (result['type'] is UserType) _selectedType = result['type'] as UserType;
+                            setState(() {});
+                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Conta criada — faça login.')));
+                          }
                         },
                         child: const Text('Cadastrar-se'),
                       ),

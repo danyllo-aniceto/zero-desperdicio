@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:zero_desperdicio/src/models/user.dart';
-import 'package:zero_desperdicio/src/screens/auth/login_screen.dart';
-import 'package:zero_desperdicio/src/screens/food/food_form_screen.dart';
-import 'package:zero_desperdicio/src/screens/food/food_list_screen.dart';
+import 'package:zero_desperdicio/src/screens/home/donate_form.dart';
+import 'package:zero_desperdicio/src/screens/home/my_donations.dart';
+import 'package:zero_desperdicio/src/screens/loginAndRegister/login_screen.dart';
+import 'package:zero_desperdicio/src/screens/food/food_list_screen.dart'; // ajuste path conforme seu projeto
 import 'package:zero_desperdicio/src/services/auth_service.dart';
-import 'donate_form.dart';
-import 'my_donations.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -39,6 +38,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget build(BuildContext context) {
     final user = userNotifier.value;
 
+    final userTypeLabel = user == null ? '' : (user.type.toString().split('.').last);
+
     return Scaffold(
       backgroundColor: const Color(0xFFF7F8FA),
       appBar: AppBar(
@@ -49,20 +50,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
           if (user != null)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Center(
-                child: Text(
-                  '${user.name} (${user.type.name})',
-                  style: const TextStyle(fontWeight: FontWeight.w500),
-                ),
-              ),
+              child: Center(child: Text('${user.name} ($userTypeLabel)', style: const TextStyle(fontWeight: FontWeight.w500))),
             ),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () {
               AuthService.instance.logout();
-              Navigator.of(context).pushReplacement(
-                MaterialPageRoute(builder: (_) => const LoginScreen()),
-              );
+              Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const LoginScreen()));
             },
           ),
         ],
@@ -79,33 +73,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
           return CustomScrollView(
             slivers: [
-              // Sliver com o cabeçalho (rola junto)
               SliverToBoxAdapter(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
-                    Text(
-                      'Bem-vindo(a)! 💚',
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      'Juntos contra o desperdício de alimentos.',
-                      style: TextStyle(
-                        fontSize: 15,
-                        color: Colors.black54,
-                      ),
-                    ),
-                    SizedBox(height: 24),
-                  ],
-                ),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: const [
+                  Text('Bem-vindo(a)! 💚', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black87)),
+                  SizedBox(height: 4),
+                  Text('Juntos contra o desperdício de alimentos.', style: TextStyle(fontSize: 15, color: Colors.black54)),
+                  SizedBox(height: 24),
+                ]),
               ),
-
-              // Sliver com os cards (grid rolável)
               SliverGrid.count(
                 crossAxisCount: columns,
                 mainAxisSpacing: 20,
@@ -117,45 +92,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     subtitle: 'Cadastrar alimentos para doação',
                     count: donatedCount,
                     icon: Icons.volunteer_activism,
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF43A047), Color(0xFF66BB6A)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const DonateFormScreen()),
-                    ),
+                    gradient: const LinearGradient(colors: [Color(0xFF43A047), Color(0xFF66BB6A)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DonateFormScreen())),
                   ),
                   _ActionCard(
                     title: 'Quero receber',
                     subtitle: 'Ver alimentos disponíveis',
                     count: availableCount,
                     icon: Icons.shopping_basket,
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFFFFA000), Color(0xFFFFD54F)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const FoodListScreen()),
-                    ),
+                    gradient: const LinearGradient(colors: [Color(0xFFFFA000), Color(0xFFFFD54F)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const FoodListScreen())),
                   ),
                   _ActionCard(
                     title: 'Minhas doações',
                     subtitle: 'Histórico de doações e recebimentos',
                     count: myDonationsCount,
                     icon: Icons.history,
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF2E7D32), Color(0xFF81C784)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const DonateFormScreen()),
-                    ),
+                    gradient: const LinearGradient(colors: [Color(0xFF2E7D32), Color(0xFF81C784)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MyDonationsScreen())),
                   ),
                 ],
               ),
@@ -167,7 +121,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 }
 
-/// Card customizado com gradiente
 class _ActionCard extends StatelessWidget {
   final String title;
   final String subtitle;
@@ -176,14 +129,7 @@ class _ActionCard extends StatelessWidget {
   final LinearGradient gradient;
   final VoidCallback onTap;
 
-  const _ActionCard({
-    required this.title,
-    required this.subtitle,
-    required this.count,
-    required this.icon,
-    required this.gradient,
-    required this.onTap,
-  });
+  const _ActionCard({required this.title, required this.subtitle, required this.count, required this.icon, required this.gradient, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -194,63 +140,26 @@ class _ActionCard extends StatelessWidget {
         decoration: BoxDecoration(
           gradient: gradient,
           borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: gradient.colors.last.withOpacity(0.3),
-              blurRadius: 12,
-              offset: const Offset(0, 6),
-            )
-          ],
+          boxShadow: [BoxShadow(color: gradient.colors.last.withOpacity(0.3), blurRadius: 12, offset: const Offset(0, 6))],
         ),
         child: Padding(
           padding: const EdgeInsets.all(20),
           child: Row(
             children: [
-              Container(
-                width: 64,
-                height: 64,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.15),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, size: 34, color: Colors.white),
-              ),
+              Container(width: 64, height: 64, decoration: BoxDecoration(color: Colors.white.withOpacity(0.15), shape: BoxShape.circle), child: Icon(icon, size: 34, color: Colors.white)),
               const SizedBox(width: 16),
               Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(title,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        )),
-                    const SizedBox(height: 6),
-                    Text(subtitle,
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 14,
-                        )),
-                  ],
-                ),
+                child: Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(title, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 6),
+                  Text(subtitle, style: const TextStyle(color: Colors.white70, fontSize: 14)),
+                ]),
               ),
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    '$count',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  const Icon(Icons.chevron_right, color: Colors.white70),
-                ],
-              ),
+              Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                Text('$count', style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 4),
+                const Icon(Icons.chevron_right, color: Colors.white70),
+              ]),
             ],
           ),
         ),

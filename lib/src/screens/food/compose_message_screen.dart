@@ -1,7 +1,8 @@
+// lib/src/screens/compose_message_screen.dart
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:zero_desperdicio/src/models/doacao_model.dart';
-import 'package:zero_desperdicio/src/services/mock_service.dart';
+import 'package:zero_desperdicio/src/data/mock_repository.dart'; // <- aqui
 import 'package:zero_desperdicio/src/models/usuario_model.dart';
 
 enum SendMethod { whatsapp, email }
@@ -32,7 +33,9 @@ class _ComposeMessageScreenState extends State<ComposeMessageScreen> {
 
   Usuario? _findRecipient() {
     try {
-      return MockService.usuarios.firstWhere((u) => u.id == widget.doacao.idUsuarioDoa);
+      // usa o repositório persistente (já inicializado no main)
+      final users = MockRepository.instance.allUsuarios();
+      return users.firstWhere((u) => u.id == widget.doacao.idUsuarioDoa);
     } catch (e) {
       return null;
     }
@@ -41,12 +44,11 @@ class _ComposeMessageScreenState extends State<ComposeMessageScreen> {
   String _buildTemplate() {
     final item = widget.doacao.alimento.nome;
     final donorName = _recipient?.nomeUsuario ?? 'responsável';
-    final contactHint = ''; // você pode inserir o próprio contato aqui se quiser
+    final contactHint = (_recipient?.tel ?? '').isNotEmpty ? 'Meu telefone: ' : '';
     if (widget.action == 'receber') {
       return 'Olá $donorName,\n\nVi sua doação de "$item" no Zero Desperdício e tenho interesse em receber. Podemos combinar a retirada/entrega?\n\n$contactHint\n\nObrigado!';
     } else {
-      // action == 'doar'
-      return 'Olá $donorName,\n\nVi seu anúncio sobre "$item" no Zero Desperdício. Gostaria de oferecer/doar/trocar (escreva aqui os detalhes). Podemos combinar?\n\n$contactHint\n\nObrigado!';
+      return 'Olá $donorName,\n\nVi seu anúncio sobre "$item" no Zero Desperdício. Gostaria de conversar sobre isso. Podemos combinar?\n\n$contactHint\n\nObrigado!';
     }
   }
 
@@ -57,15 +59,11 @@ class _ComposeMessageScreenState extends State<ComposeMessageScreen> {
       return;
     }
 
-    // Buscar contato do destinatário
     final recipient = _recipient;
     final email = recipient?.email;
-    final phoneRaw = recipient?.tel; // tal como mock (ex: '11999999999')
+    final phoneRaw = recipient?.tel;
     String phone = '';
-    if (phoneRaw != null) {
-      // remover caracteres não-dígitos (apenas para deixar mais seguro)
-      phone = phoneRaw.replaceAll(RegExp(r'\D'), '');
-    }
+    if (phoneRaw != null) phone = phoneRaw.replaceAll(RegExp(r'\D'), '');
 
     if (_method == SendMethod.email) {
       if (email == null || email.isEmpty) {
@@ -77,26 +75,21 @@ class _ComposeMessageScreenState extends State<ComposeMessageScreen> {
       final uri = Uri.parse('mailto:$email?subject=$subject&body=$body');
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri);
-        Navigator.pop(context); // voltar depois de abrir o app de email
+        Navigator.pop(context);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Não foi possível abrir o app de email.')));
       }
     } else {
-      // WhatsApp
       if (phone.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Número do destinatário não disponível.')));
         return;
       }
-
-      // Tenta usar wa.me com número (sem +). Se quiser forçar +55, ajuste aqui.
       final encoded = Uri.encodeComponent(text);
       final uri = Uri.parse('https://wa.me/$phone?text=$encoded');
-
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
         Navigator.pop(context);
       } else {
-        // fallback com whatsapp://send?text=...&phone=...
         final fallback = Uri.parse('whatsapp://send?phone=$phone&text=$encoded');
         if (await canLaunchUrl(fallback)) {
           await launchUrl(fallback);
@@ -126,7 +119,6 @@ class _ComposeMessageScreenState extends State<ComposeMessageScreen> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            // Info do destinatário
             Row(
               children: [
                 const Icon(Icons.person, color: Colors.green),
@@ -135,8 +127,6 @@ class _ComposeMessageScreenState extends State<ComposeMessageScreen> {
               ],
             ),
             const SizedBox(height: 12),
-
-            // Campo editável com template
             Expanded(
               child: TextFormField(
                 controller: _ctrl,
@@ -148,10 +138,7 @@ class _ComposeMessageScreenState extends State<ComposeMessageScreen> {
                 ),
               ),
             ),
-
             const SizedBox(height: 12),
-
-            // Escolha do método
             Row(
               children: [
                 Expanded(
@@ -170,9 +157,7 @@ class _ComposeMessageScreenState extends State<ComposeMessageScreen> {
                 ),
               ],
             ),
-
             const SizedBox(height: 8),
-
             Row(
               children: [
                 Expanded(
