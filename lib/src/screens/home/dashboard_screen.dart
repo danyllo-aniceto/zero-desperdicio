@@ -3,8 +3,10 @@ import 'package:zero_desperdicio/src/models/user.dart';
 import 'package:zero_desperdicio/src/screens/home/donate_form.dart';
 import 'package:zero_desperdicio/src/screens/home/my_donations.dart';
 import 'package:zero_desperdicio/src/screens/loginAndRegister/login_screen.dart';
-import 'package:zero_desperdicio/src/screens/food/food_list_screen.dart'; // ajuste path conforme seu projeto
+import 'package:zero_desperdicio/src/screens/food/food_list_screen.dart';
+import 'package:zero_desperdicio/src/screens/user/user_profile_screen.dart';
 import 'package:zero_desperdicio/src/services/auth_service.dart';
+import 'package:zero_desperdicio/src/data/mock_repository.dart'; // IMPORT para ler os dados locais
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -16,28 +18,66 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   late final ValueNotifier<User?> userNotifier;
 
-  int donatedCount = 12;
-  int availableCount = 8;
-  int myDonationsCount = 5;
+  // Agora estes campos serão calculados em runtime
+  int? donatedCount; // não usaremos no card "Quero doar" (vai ficar null)
+  int availableCount = 0; // "Quero receber"
+  int myDonationsCount = 0; // "Minhas doações" (histórico)
 
   @override
   void initState() {
     super.initState();
     userNotifier = AuthService.instance.currentUser;
     userNotifier.addListener(_onUserChange);
+    // Carrega counts iniciais
+    _loadCounts();
   }
 
-  void _onUserChange() => setState(() {});
+  void _onUserChange() {
+    // quando usuário muda, recalcular
+    _loadCounts();
+    setState(() {}); // atualiza UI com possível nome do usuário
+  }
+
   @override
   void dispose() {
     userNotifier.removeListener(_onUserChange);
     super.dispose();
   }
 
+  Future<void> _loadCounts() async {
+    // inicializa o mock repo caso necessário
+    await MockRepository.instance.init();
+
+    final all = MockRepository.instance.allDoacoes();
+    final user = userNotifier.value;
+    final myId = user == null ? -1 : int.tryParse(user.id) ?? -1;
+
+    // Disponíveis: não sou dono, não concluídas, não atribuídas (idUsuarioRec == 0)
+    final available = all.where((d) {
+      final isOwner = d.idUsuarioDoa == myId;
+      final isConcluded = d.status.toLowerCase().contains('conclu');
+      final isAssigned = d.idUsuarioRec != 0;
+      return !isOwner && !isConcluded && !isAssigned;
+    }).length;
+
+    // Histórico/minhas doações: seu id e concluídas (mantendo comportamento do MyDonationsScreen)
+    final mineConcluded = all.where((d) {
+      final isOwner = d.idUsuarioDoa == myId;
+      final isConcluded = d.status.toLowerCase().contains('conclu');
+      return isOwner && isConcluded;
+    }).length;
+
+    setState(() {
+      // donatedCount intencionalmente deixado nulo para não exibir
+      donatedCount = null;
+      availableCount = available;
+      myDonationsCount = mineConcluded;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = userNotifier.value;
-
     final userTypeLabel = user == null ? '' : (user.type.toString().split('.').last);
 
     return Scaffold(
@@ -87,30 +127,64 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 crossAxisSpacing: 20,
                 childAspectRatio: 1.4,
                 children: [
+                  // Quero doar — sem número (count null -> não exibe)
                   _ActionCard(
                     title: 'Quero doar',
                     subtitle: 'Cadastrar alimentos para doação',
-                    count: donatedCount,
+                    count: null, // não mostra número
                     icon: Icons.volunteer_activism,
                     gradient: const LinearGradient(colors: [Color(0xFF43A047), Color(0xFF66BB6A)], begin: Alignment.topLeft, end: Alignment.bottomRight),
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DonateFormScreen())),
+                    onTap: () async {
+                      // aguarda retorno e recarrega contagens (caso a doação tenha sido criada)
+                      await Navigator.push(context, MaterialPageRoute(builder: (_) => const DonateFormScreen()));
+                      await _loadCounts();
+                    },
                   ),
+
+                  // Quero receber — mostra contagem em tempo real
                   _ActionCard(
                     title: 'Quero receber',
                     subtitle: 'Ver alimentos disponíveis',
                     count: availableCount,
                     icon: Icons.shopping_basket,
                     gradient: const LinearGradient(colors: [Color(0xFFFFA000), Color(0xFFFFD54F)], begin: Alignment.topLeft, end: Alignment.bottomRight),
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const FoodListScreen())),
+                    onTap: () async {
+                      await Navigator.push(context, MaterialPageRoute(builder: (_) => const FoodListScreen()));
+                      await _loadCounts(); // recarrega ao voltar
+                    },
                   ),
+
+                  // Minhas doações (histórico) — mostra número do histórico (concluídos)
                   _ActionCard(
                     title: 'Minhas doações',
                     subtitle: 'Histórico de doações e recebimentos',
                     count: myDonationsCount,
                     icon: Icons.history,
                     gradient: const LinearGradient(colors: [Color(0xFF2E7D32), Color(0xFF81C784)], begin: Alignment.topLeft, end: Alignment.bottomRight),
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MyDonationsScreen())),
+                    onTap: () async {
+                      await Navigator.push(context, MaterialPageRoute(builder: (_) => const MyDonationsScreen()));
+                      await _loadCounts();
+                    },
                   ),
+
+                  _ActionCard(
+                  title: 'Meu perfil',
+                  subtitle: 'Ver e editar suas informações',
+                  count: null,
+                  icon: Icons.person,
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF1976D2), Color(0xFF64B5F6)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  onTap: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const UserProfileScreen()),
+                    );
+                    setState(() {}); // Atualiza dados no dashboard após edição
+                  },
+                ),
                 ],
               ),
             ],
@@ -124,12 +198,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
 class _ActionCard extends StatelessWidget {
   final String title;
   final String subtitle;
-  final int count;
+  final int? count; // agora opcional
   final IconData icon;
   final LinearGradient gradient;
   final VoidCallback onTap;
 
-  const _ActionCard({required this.title, required this.subtitle, required this.count, required this.icon, required this.gradient, required this.onTap});
+  const _ActionCard({
+    required this.title,
+    required this.subtitle,
+    required this.count,
+    required this.icon,
+    required this.gradient,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -155,11 +236,15 @@ class _ActionCard extends StatelessWidget {
                   Text(subtitle, style: const TextStyle(color: Colors.white70, fontSize: 14)),
                 ]),
               ),
-              Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                Text('$count', style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 4),
+              // se count for null, não mostramos a coluna de número
+              if (count != null)
+                Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                  Text('$count', style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 4),
+                  const Icon(Icons.chevron_right, color: Colors.white70),
+                ])
+              else
                 const Icon(Icons.chevron_right, color: Colors.white70),
-              ]),
             ],
           ),
         ),
