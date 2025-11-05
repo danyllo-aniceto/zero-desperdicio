@@ -195,6 +195,17 @@ class MockRepository {
     await _saveToDisk();
   }
 
+  Future<void> updateUsuario(Usuario updated) async {
+    await init();
+    final idx = usuarios.indexWhere((u) => u.id == updated.id);
+    if (idx != -1) {
+      usuarios[idx] = updated;
+      await _saveToDisk();
+    } else {
+      throw Exception('Usuário não encontrado');
+    }
+  }
+
   List<Doacao> allDoacoes() => List<Doacao>.from(doacoes);
   List<Usuario> allUsuarios() => List<Usuario>.from(usuarios);
   List<Alimento> allAlimentos() => List<Alimento>.from(alimentos);

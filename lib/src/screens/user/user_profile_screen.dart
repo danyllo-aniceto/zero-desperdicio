@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:zero_desperdicio/src/data/mock_repository.dart';
+import 'package:zero_desperdicio/src/models/usuario_model.dart';
 import 'package:zero_desperdicio/src/services/auth_service.dart';
 import 'package:zero_desperdicio/src/models/user.dart';
 
@@ -22,7 +24,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     _phoneController = TextEditingController(text: user?.phone ?? '');
   }
 
-  void _saveChanges() {
+  Future<void> _saveChanges() async {
     final name = _nameController.text.trim();
     final phone = _phoneController.text.trim();
 
@@ -33,12 +35,32 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       return;
     }
 
+    if (user == null) return;
+
+    // 1️⃣ Atualiza no MockRepository
+    await MockRepository.instance.init();
+    final usuarios = MockRepository.instance.allUsuarios();
+    final usuarioIdx = usuarios.indexWhere((u) => u.id.toString() == user!.id);
+
+    if (usuarioIdx != -1) {
+      final usuario = usuarios[usuarioIdx];
+      final atualizado = Usuario(
+        id: usuario.id,
+        nomeUsuario: name,
+        email: usuario.email,
+        senha: usuario.senha,
+        tel: phone,
+        tipo: usuario.tipo,
+      );
+
+      await MockRepository.instance.updateUsuario(atualizado);
+    }
+
+    // 2️⃣ Atualiza no AuthService (memória)
     final updatedUser = user!.copyWith(name: name, phone: phone);
     AuthService.instance.currentUser.value = updatedUser;
 
-    setState(() {
-      user = updatedUser; // <-- atualiza no estado local também
-    });
+    setState(() => user = updatedUser);
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Informações atualizadas com sucesso!')),
@@ -47,6 +69,12 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     Navigator.pop(context);
   }
 
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _phoneController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
