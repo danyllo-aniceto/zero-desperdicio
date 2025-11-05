@@ -1,8 +1,9 @@
-// lib/src/services/auth_service.dart
 import 'package:flutter/foundation.dart';
 import 'package:zero_desperdicio/src/data/mock_repository.dart';
 import 'package:zero_desperdicio/src/models/user.dart';
 import 'package:zero_desperdicio/src/models/usuario_model.dart';
+
+enum LoginState { success, pending, blocked, admin, error }
 
 class AuthService {
   AuthService._internal();
@@ -10,8 +11,7 @@ class AuthService {
 
   final ValueNotifier<User?> currentUser = ValueNotifier<User?>(null);
 
-  /// Tenta logar usando o MockRepository — trata exceções e retorna false em erro.
-  Future<bool> login({
+  Future<LoginState> login({
     required String email,
     required String password,
     required UserType expectedType,
@@ -19,15 +19,39 @@ class AuthService {
     try {
       await MockRepository.instance.init();
 
-      final Usuario? usuario = await MockRepository.instance.findUserByEmailAndPassword(email, password);
-      if (usuario == null) return false;
+      final usuario = await MockRepository.instance
+          .findUserByEmailAndPassword(email, password);
 
-      // usar usuario.tipo se disponível ('normal' / 'ong')
-      final String tipoStr = usuario.tipo.toLowerCase();
-      final userType = (tipoStr == 'ong') ? UserType.ong : UserType.normal;
+      if (usuario == null) return LoginState.error;
 
-      // se expectedType não bater, falha
-      if (userType != expectedType) return false;
+      // --- ADMIN ---
+      if (usuario.email == 'danyllo@admin.com' ||
+          usuario.nomeUsuario.toLowerCase() == 'danyllo') {
+        final user = User(
+          id: usuario.id.toString(),
+          name: usuario.nomeUsuario,
+          email: usuario.email,
+          password: usuario.senha,
+          type: UserType.normal,
+        );
+        currentUser.value = user;
+        return LoginState.admin;
+      }
+
+      // --- ONG pendente ---
+      if (usuario.tipo == 'ong' && usuario.status == 'pendente') {
+        return LoginState.pending;
+      }
+
+      // --- Usuário bloqueado ---
+      if (usuario.status == 'bloqueado') {
+        return LoginState.blocked;
+      }
+
+      // --- Usuário comum ou ONG aprovada ---
+      final tipoStr = usuario.tipo.toLowerCase();
+      final userType =
+          (tipoStr == 'ong') ? UserType.ong : UserType.normal;
 
       final user = User(
         id: usuario.id.toString(),
@@ -38,11 +62,10 @@ class AuthService {
       );
 
       currentUser.value = user;
-      return true;
+      return LoginState.success;
     } catch (e, st) {
-      // ignore: avoid_print
       print('AuthService.login error: $e\n$st');
-      return false;
+      return LoginState.error;
     }
   }
 

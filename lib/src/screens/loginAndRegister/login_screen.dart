@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:zero_desperdicio/src/models/user.dart';
+import 'package:zero_desperdicio/src/screens/admin/admin_dashboard_screen.dart';
 import 'package:zero_desperdicio/src/screens/home/dashboard_screen.dart';
 import 'package:zero_desperdicio/src/screens/loginAndRegister/register_screen.dart';
+import 'package:zero_desperdicio/src/screens/status/blocked_user_screen.dart';
+import 'package:zero_desperdicio/src/screens/status/waiting_approval_screen.dart';
 import 'package:zero_desperdicio/src/services/auth_service.dart';
 // Se tiver tela de registro, ajuste import; senão comente
 // import 'register_screen.dart';
@@ -20,39 +23,51 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _loading = false;
 
   void _tryLogin() async {
-    setState(() => _loading = true);
+  setState(() => _loading = true);
 
-    try {
-      final ok = await AuthService.instance.login(
-        email: _emailCtrl.text.trim(),
-        password: _passCtrl.text,
-        expectedType: _selectedType,
-      );
+  try {
+    final result = await AuthService.instance.login(
+      email: _emailCtrl.text.trim(),
+      password: _passCtrl.text,
+      expectedType: _selectedType,
+    );
 
-      if (ok) {
-        if (!mounted) return;
+    if (!mounted) return;
+
+    switch (result) {
+      case LoginState.success:
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const DashboardScreen()),
         );
-      } else {
-        if (!mounted) return;
+        break;
+
+      case LoginState.admin:
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const AdminDashboardScreen()),
+        );
+        break;
+
+      case LoginState.pending:
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const WaitingApprovalScreen()),
+        );
+        break;
+
+      case LoginState.blocked:
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const BlockedUserScreen()),
+        );
+        break;
+
+      default:
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Credenciais inválidas')),
         );
-      }
-    } catch (e, st) {
-      // caso algo inesperado aconteça
-      // ignore: avoid_print
-      print('Login error: $e\n$st');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro ao tentar logar: $e')),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _loading = false);
     }
+  } finally {
+    if (mounted) setState(() => _loading = false);
   }
+}
 
   @override
   Widget build(BuildContext context) {

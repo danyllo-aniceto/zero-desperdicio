@@ -52,17 +52,40 @@ class _RegisterScreenState extends State<RegisterScreen> {
       }
 
       final tipo = _selectedType == UserType.ong ? 'ong' : 'normal';
-      final created = await MockRepository.instance.addUsuario(Usuario(id: 0, nomeUsuario: name, email: email, senha: pass, tel: tel, tipo: tipo));
+      final created = await MockRepository.instance.addUsuario(
+        Usuario(
+          id: 0,
+          nomeUsuario: name,
+          email: email,
+          senha: pass,
+          tel: tel,
+          tipo: tipo,
+          status: tipo == 'ong' ? 'pendente' : 'ativo', // 👈 ONG começa pendente
+        ),
+      );
 
       // tenta auto-login com o tipo selecionado
-      final logged = await AuthService.instance.login(email: email, password: pass, expectedType: _selectedType);
+      final loginResult = await AuthService.instance.login(
+        email: email,
+        password: pass,
+        expectedType: _selectedType,
+      );
 
-      if (logged) {
-        // navega direto para dashboard
+      if (loginResult == LoginState.success) {
         if (!mounted) return;
-        Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder: (_) => const DashboardScreen()), (_) => false);
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const DashboardScreen()),
+          (_) => false,
+        );
+      } else if (loginResult == LoginState.pending) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Conta criada! Aguarde aprovação do administrador.')),
+        );
+        if (mounted) Navigator.pop(context, {'email': email, 'type': _selectedType});
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Conta criada. Faça login manualmente.')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Conta criada. Faça login manualmente.')),
+        );
         if (mounted) Navigator.pop(context, {'email': email, 'type': _selectedType});
       }
     } catch (e) {

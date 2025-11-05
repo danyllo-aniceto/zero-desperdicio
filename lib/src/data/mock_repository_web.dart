@@ -61,9 +61,9 @@ class MockRepository {
     doacoes.clear();
 
     usuarios.addAll([
-      Usuario(id: 1, nomeUsuario: 'Danyllo', email: 'dany@teste.com', senha: '1234', tel: '5511999999999', tipo: 'normal'),
-      Usuario(id: 2, nomeUsuario: 'Maria', email: 'maria@teste.com', senha: '1234', tel: '5511988888888', tipo: 'normal'),
-      Usuario(id: 3, nomeUsuario: 'ONG Verde', email: 'contato@ongverde.org', senha: '1234', tel: '5511977777777', tipo: 'ong'),
+      Usuario(id: 1, nomeUsuario: 'Admin', email: 'admin@teste.com', senha: '1234', tel: '5511999999999', tipo: 'normal', isAdmin: true, status: 'ativo'),
+      Usuario(id: 2, nomeUsuario: 'Danyllo', email: 'dany@teste.com', senha: '1234', tel: '5511988888888', tipo: 'normal', status: 'ativo'),
+      Usuario(id: 3, nomeUsuario: 'ONG Verde', email: 'ong@verde.org', senha: '1234', tel: '5511977777777', tipo: 'ong', status: 'pendente'),
     ]);
 
 
@@ -130,13 +130,26 @@ class MockRepository {
   }
 
   Future<Usuario> addUsuario(Usuario u) async {
-    await init();
-    final newId = (usuarios.isEmpty) ? 1 : (usuarios.map((x) => x.id).reduce((a, b) => a > b ? a : b) + 1);
-    final novo = Usuario(id: newId, nomeUsuario: u.nomeUsuario, email: u.email, senha: u.senha, tel: u.tel, tipo: u.tipo);
-    usuarios.add(novo);
-    await _saveToStorage();
-    return novo;
-  }
+  await init();
+  final newId = (usuarios.isEmpty)
+      ? 1
+      : (usuarios.map((x) => x.id).reduce((a, b) => a > b ? a : b) + 1);
+
+  final novo = Usuario(
+    id: newId,
+    nomeUsuario: u.nomeUsuario,
+    email: u.email,
+    senha: u.senha,
+    tel: u.tel,
+    tipo: u.tipo,
+    status: u.status, // ✅ mantém status enviado (pendente/ativo/bloqueado)
+    isAdmin: u.isAdmin, // ✅ mantém flag de admin se vier
+  );
+
+  usuarios.add(novo);
+  await _saveToStorage();
+  return novo;
+}
 
   // Alimentos & Doações
   Future<List<Doacao>> fetchDoacoesPaged({required int page, required int pageSize}) async {
