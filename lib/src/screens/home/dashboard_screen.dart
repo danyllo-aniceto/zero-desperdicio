@@ -83,23 +83,51 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF7F8FA),
       appBar: AppBar(
-        title: const Text('Zero Desperdício'),
-        centerTitle: true,
-        elevation: 2,
-        actions: [
-          if (user != null)
+        backgroundColor: Colors.white,
+        elevation: 3,
+        automaticallyImplyLeading: false,
+        titleSpacing: 0,
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            // LOGO alinhada à esquerda
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Center(child: Text('${user.name} ($userTypeLabel)', style: const TextStyle(fontWeight: FontWeight.w500))),
+              padding: const EdgeInsets.only(left: 16),
+              child: Image.asset(
+                'assets/images/logo.png',
+                height: 42,
+              ),
             ),
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () {
-              AuthService.instance.logout();
-              Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const LoginScreen()));
-            },
-          ),
-        ],
+
+            // Nome do usuário e botão de logout à direita
+            Row(
+              children: [
+                if (AuthService.instance.currentUser.value != null)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: Text(
+                      AuthService.instance.currentUser.value!.name,
+                      style: const TextStyle(
+                        color: Colors.black87,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                IconButton(
+                  tooltip: 'Sair',
+                  icon: const Icon(Icons.logout, color: Colors.redAccent),
+                  onPressed: () {
+                    AuthService.instance.logout();
+                    Navigator.of(context).pushReplacement(
+                      MaterialPageRoute(builder: (_) => const LoginScreen()),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(24),

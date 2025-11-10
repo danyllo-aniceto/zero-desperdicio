@@ -24,15 +24,14 @@ class AuthService {
 
       if (usuario == null) return LoginState.error;
 
-      // --- ADMIN ---
-      if (usuario.email == 'danyllo@admin.com' ||
-          usuario.nomeUsuario.toLowerCase() == 'danyllo') {
+      // --- ADMIN: usa a flag isAdmin no modelo Usuario ---
+      if (usuario.isAdmin == true) {
         final user = User(
           id: usuario.id.toString(),
           name: usuario.nomeUsuario,
           email: usuario.email,
           password: usuario.senha,
-          type: UserType.normal,
+          type: UserType.normal, // admin treated as 'normal' in User model
         );
         currentUser.value = user;
         return LoginState.admin;
@@ -50,8 +49,7 @@ class AuthService {
 
       // --- Usuário comum ou ONG aprovada ---
       final tipoStr = usuario.tipo.toLowerCase();
-      final userType =
-          (tipoStr == 'ong') ? UserType.ong : UserType.normal;
+      final userType = (tipoStr == 'ong') ? UserType.ong : UserType.normal;
 
       final user = User(
         id: usuario.id.toString(),

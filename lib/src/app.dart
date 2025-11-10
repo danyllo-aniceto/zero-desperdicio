@@ -50,27 +50,84 @@ class _AppState extends State<App> {
         builder: (context, user, _) {
           if (user == null) {
             return const LoginScreen();
-          } else if (user.email == 'danyllo@admin.com' ||
-              user.name.toLowerCase() == 'danyllo') {
-            return const AdminDashboardScreen();
-          } else {
-            // Checa status da conta
-            return FutureBuilder<String?>(
-              future: _getStatus(user.id),
-              builder: (context, snapshot) {
-                final status = snapshot.data ?? 'ativo';
-                if (status == 'pendente') {
-                  return const WaitingApprovalScreen();
-                } else if (status == 'bloqueado') {
-                  return const BlockedUserScreen();
-                } else {
-                  return const DashboardScreen();
-                }
-              },
-            );
           }
+
+          // Painel do ADMIN
+          if (user.email == 'danyllo@admin.com' ||
+              user.name.toLowerCase() == 'danyllo') {
+            return _buildWithAppBar(context, const AdminDashboardScreen());
+          }
+
+          // Checa status da conta
+          return FutureBuilder<String?>(
+            future: _getStatus(user.id),
+            builder: (context, snapshot) {
+              final status = snapshot.data ?? 'ativo';
+              if (status == 'pendente') {
+                return const WaitingApprovalScreen();
+              } else if (status == 'bloqueado') {
+                return const BlockedUserScreen();
+              } else {
+                return _buildWithAppBar(context, const DashboardScreen());
+              }
+            },
+          );
         },
       ),
+    );
+  }
+
+  /// Monta o layout com AppBar global (logo + nome + logout)
+  Widget _buildWithAppBar(BuildContext context, Widget body) {
+    final user = AuthService.instance.currentUser.value;
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 3,
+        titleSpacing: 0,
+        automaticallyImplyLeading: false,
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            // Logo à esquerda
+            Padding(
+              padding: const EdgeInsets.only(left: 12),
+              child: Image.asset(
+                'assets/images/logo.png',
+                height: 40,
+              ),
+            ),
+
+            // Nome do usuário + botão logout
+            Row(
+              children: [
+                if (user != null)
+                  Text(
+                    user.name,
+                    style: const TextStyle(
+                      color: Colors.black87,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
+                    ),
+                  ),
+                const SizedBox(width: 8),
+                IconButton(
+                  tooltip: 'Sair',
+                  icon: const Icon(Icons.logout, color: Colors.redAccent),
+                  onPressed: () {
+                    AuthService.instance.logout();
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(builder: (_) => const LoginScreen()),
+                      (_) => false,
+                    );
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+      body: body,
     );
   }
 }

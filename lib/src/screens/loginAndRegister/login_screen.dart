@@ -6,8 +6,6 @@ import 'package:zero_desperdicio/src/screens/loginAndRegister/register_screen.da
 import 'package:zero_desperdicio/src/screens/status/blocked_user_screen.dart';
 import 'package:zero_desperdicio/src/screens/status/waiting_approval_screen.dart';
 import 'package:zero_desperdicio/src/services/auth_service.dart';
-// Se tiver tela de registro, ajuste import; senão comente
-// import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -23,51 +21,46 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _loading = false;
 
   void _tryLogin() async {
-  setState(() => _loading = true);
+    setState(() => _loading = true);
+    try {
+      final result = await AuthService.instance.login(
+        email: _emailCtrl.text.trim(),
+        password: _passCtrl.text,
+        expectedType: _selectedType,
+      );
 
-  try {
-    final result = await AuthService.instance.login(
-      email: _emailCtrl.text.trim(),
-      password: _passCtrl.text,
-      expectedType: _selectedType,
-    );
+      if (!mounted) return;
 
-    if (!mounted) return;
-
-    switch (result) {
-      case LoginState.success:
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const DashboardScreen()),
-        );
-        break;
-
-      case LoginState.admin:
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const AdminDashboardScreen()),
-        );
-        break;
-
-      case LoginState.pending:
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const WaitingApprovalScreen()),
-        );
-        break;
-
-      case LoginState.blocked:
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const BlockedUserScreen()),
-        );
-        break;
-
-      default:
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Credenciais inválidas')),
-        );
+      switch (result) {
+        case LoginState.success:
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const DashboardScreen()),
+          );
+          break;
+        case LoginState.admin:
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const AdminDashboardScreen()),
+          );
+          break;
+        case LoginState.pending:
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const WaitingApprovalScreen()),
+          );
+          break;
+        case LoginState.blocked:
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const BlockedUserScreen()),
+          );
+          break;
+        default:
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Credenciais inválidas')),
+          );
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
     }
-  } finally {
-    if (mounted) setState(() => _loading = false);
   }
-}
 
   @override
   Widget build(BuildContext context) {
@@ -79,56 +72,50 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              // LOGO
               Container(
-                height: 100,
-                width: 100,
+                width: 620,
+                height: 120,
                 margin: const EdgeInsets.only(bottom: 24),
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white,
-                  boxShadow: [
-                    BoxShadow(blurRadius: 8, color: Colors.black12, offset: Offset(0, 3))
-                  ],
+                child: Padding(
+                  padding: const EdgeInsets.all(4),
+                  child: Image.asset(
+                    'assets/images/logo.png',
+                    fit: BoxFit.contain,
+                  ),
                 ),
-                child: const Icon(Icons.volunteer_activism, size: 60, color: Colors.green),
               ),
+
               Card(
                 elevation: 4,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
                 child: Padding(
                   padding: const EdgeInsets.all(24),
                   child: Column(
                     children: [
+                      const Text(
+                        "Bem-vindo ao Zero Desperdício!",
+                        style: TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold, color: Color.fromARGB(255, 26, 49, 27)),
+                      ),
+                      const SizedBox(height: 16),
                       TextField(
                         controller: _emailCtrl,
-                        decoration: const InputDecoration(labelText: 'Email', prefixIcon: Icon(Icons.email_outlined)),
+                        decoration: const InputDecoration(
+                          labelText: 'Email',
+                          prefixIcon: Icon(Icons.email_outlined),
+                        ),
                       ),
                       const SizedBox(height: 16),
                       TextField(
                         controller: _passCtrl,
-                        decoration: const InputDecoration(labelText: 'Senha', prefixIcon: Icon(Icons.lock_outline)),
+                        decoration: const InputDecoration(
+                          labelText: 'Senha',
+                          prefixIcon: Icon(Icons.lock_outline),
+                        ),
                         obscureText: true,
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: RadioListTile<UserType>(
-                              value: UserType.normal,
-                              groupValue: _selectedType,
-                              onChanged: (v) => setState(() => _selectedType = v!),
-                              title: const Text('Usuário'),
-                            ),
-                          ),
-                          Expanded(
-                            child: RadioListTile<UserType>(
-                              value: UserType.ong,
-                              groupValue: _selectedType,
-                              onChanged: (v) => setState(() => _selectedType = v!),
-                              title: const Text('ONG'),
-                            ),
-                          ),
-                        ],
                       ),
                       const SizedBox(height: 16),
                       SizedBox(
@@ -138,9 +125,13 @@ class _LoginScreenState extends State<LoginScreen> {
                           onPressed: _loading ? null : _tryLogin,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.green,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                           ),
-                          child: _loading ? const CircularProgressIndicator(color: Colors.white) : const Text('Entrar', style: TextStyle(fontSize: 16)),
+                          child: _loading
+                              ? const CircularProgressIndicator(color: Colors.white)
+                              : const Text('Entrar', style: TextStyle(fontSize: 16, color: Colors.white)),
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -149,12 +140,15 @@ class _LoginScreenState extends State<LoginScreen> {
                           final result = await Navigator.of(context).push(
                             MaterialPageRoute(builder: (_) => const RegisterScreen()),
                           );
-                          // se o registro retornou email, pré-preenche para facilitar o login
                           if (result is Map && result['email'] != null) {
                             _emailCtrl.text = result['email'] as String;
-                            if (result['type'] is UserType) _selectedType = result['type'] as UserType;
+                            if (result['type'] is UserType) {
+                              _selectedType = result['type'] as UserType;
+                            }
                             setState(() {});
-                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Conta criada — faça login.')));
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Conta criada — faça login.')),
+                            );
                           }
                         },
                         child: const Text('Cadastrar-se'),

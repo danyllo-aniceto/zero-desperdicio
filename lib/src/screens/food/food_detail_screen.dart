@@ -107,62 +107,121 @@ class _FoodDetailScreenState extends State<FoodDetailScreen> {
           const SizedBox(height: 20),
 
           // --- Criador / Responsável (buscado do mock) ---
-          FutureBuilder<Usuario?>(
-            future: _creatorFuture,
-            builder: (context, snap) {
-              if (snap.connectionState == ConnectionState.waiting) {
-                return const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 8.0),
-                  child: SizedBox(height: 40, child: Center(child: CircularProgressIndicator(strokeWidth: 2.0))),
-                );
-              }
-              final creator = snap.data;
-              if (creator == null) {
-                return Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.person_outline, size: 36, color: Colors.black54),
-                        const SizedBox(width: 12),
-                        const Expanded(child: Text('Responsável não disponível', style: TextStyle(fontWeight: FontWeight.w600))),
-                      ],
-                    ),
-                  ),
-                );
-              }
-
-              final isCurrentUser = AuthService.instance.currentUser.value?.id == creator.id.toString();
-
+         FutureBuilder<Usuario?>(
+          future: _creatorFuture,
+          builder: (context, snap) {
+            if (snap.connectionState == ConnectionState.waiting) {
+              return const Padding(
+                padding: EdgeInsets.symmetric(vertical: 8.0),
+                child: SizedBox(
+                  height: 40,
+                  child: Center(child: CircularProgressIndicator(strokeWidth: 2.0)),
+                ),
+              );
+            }
+            final creator = snap.data;
+            if (creator == null) {
               return Card(
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 child: Padding(
                   padding: const EdgeInsets.all(12),
                   child: Row(
-                    children: [
-                      const Icon(Icons.person, size: 36, color: Colors.green),
-                      const SizedBox(width: 12),
+                    children: const [
+                      Icon(Icons.person_outline, size: 36, color: Colors.black54),
+                      SizedBox(width: 12),
                       Expanded(
-                        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                          Text(creator.nomeUsuario, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                          const SizedBox(height: 4),
-                          Text(creator.email, style: const TextStyle(fontSize: 13, color: Colors.black54)),
-                          const SizedBox(height: 2),
-                          Text(creator.tel, style: const TextStyle(fontSize: 13, color: Colors.black54)),
-                          if (isCurrentUser) const Padding(padding: EdgeInsets.only(top: 6), child: Text('Você', style: TextStyle(fontSize: 12, color: Colors.green))),
-                        ]),
-                      ),
-                      IconButton(
-                        tooltip: 'Enviar mensagem',
-                        onPressed: () => _showMessageOptions(context, widget.doacao),
-                        icon: const Icon(Icons.message, color: Colors.green),
+                        child: Text(
+                          'Responsável não disponível',
+                          style: TextStyle(fontWeight: FontWeight.w600),
+                        ),
                       ),
                     ],
                   ),
                 ),
               );
-            },
-          ),
+            }
+
+            final isCurrentUser = AuthService.instance.currentUser.value?.id == creator.id.toString();
+            final isOng = creator.tipo == 'ong';
+
+            return Card(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              elevation: 3,
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Row(
+                  children: [
+                    Stack(
+                      children: [
+                        const CircleAvatar(
+                          radius: 24,
+                          backgroundColor: Colors.green,
+                          child: Icon(Icons.person, color: Colors.white),
+                        ),
+                        if (isOng)
+                          Positioned(
+                            right: 0,
+                            bottom: 0,
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: const BoxDecoration(
+                                color: Colors.lightBlueAccent,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.favorite, size: 12, color: Colors.white),
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Text(
+                                creator.nomeUsuario,
+                                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                              ),
+                              if (isOng) ...[
+                                const SizedBox(width: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: Colors.lightBlueAccent.withOpacity(0.9),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: const Text(
+                                    'ONG',
+                                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(creator.email, style: const TextStyle(fontSize: 13, color: Colors.black54)),
+                          const SizedBox(height: 2),
+                          Text(creator.tel, style: const TextStyle(fontSize: 13, color: Colors.black54)),
+                          if (isCurrentUser)
+                            const Padding(
+                              padding: EdgeInsets.only(top: 6),
+                              child: Text('Você', style: TextStyle(fontSize: 12, color: Colors.green)),
+                            ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: 'Enviar mensagem',
+                      onPressed: () => _showMessageOptions(context, widget.doacao),
+                      icon: const Icon(Icons.message, color: Colors.green),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
 
           const SizedBox(height: 16),
 

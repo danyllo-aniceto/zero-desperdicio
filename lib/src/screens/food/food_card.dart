@@ -1,26 +1,58 @@
 import 'package:flutter/material.dart';
+import 'package:zero_desperdicio/src/data/mock_repository.dart';
 import 'package:zero_desperdicio/src/models/doacao_model.dart';
+import 'package:zero_desperdicio/src/models/usuario_model.dart';
 import 'package:zero_desperdicio/src/services/auth_service.dart';
 
-class FoodCard extends StatelessWidget {
+class FoodCard extends StatefulWidget {
   final Doacao item;
   final VoidCallback? onTap;
   final VoidCallback? onDelete;
 
   const FoodCard({super.key, required this.item, this.onTap, this.onDelete});
 
+  @override
+  State<FoodCard> createState() => _FoodCardState();
+}
+
+class _FoodCardState extends State<FoodCard> {
+  Usuario? _creator;
+  bool _loading = true;
+
   bool get _isOwner {
     final user = AuthService.instance.currentUser.value;
     if (user == null) return false;
-    // comparando id (AuthService tem id como String no exemplo anterior)
-    return user.id == item.idUsuarioDoa.toString();
+    return user.id == widget.item.idUsuarioDoa.toString();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCreator();
+  }
+
+  Future<void> _loadCreator() async {
+    await MockRepository.instance.init();
+    final users = MockRepository.instance.allUsuarios();
+    try {
+      final found =
+          users.firstWhere((u) => u.id == widget.item.idUsuarioDoa);
+      setState(() {
+        _creator = found;
+        _loading = false;
+      });
+    } catch (_) {
+      setState(() => _loading = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final imageUrl = item.alimento.imageUrl;
+    final imageUrl = widget.item.alimento.imageUrl;
+    final isOng = _creator?.tipo == 'ong';
+
     return InkWell(
-      onTap: onTap,
+      onTap: widget.onTap,
       borderRadius: BorderRadius.circular(16),
       child: Stack(
         children: [
@@ -35,10 +67,10 @@ class FoodCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.green.withOpacity(0.2),
-                  blurRadius: 8,
-                  offset: const Offset(0, 3),
-                )
+                  color: Colors.green.withOpacity(0.25),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
               ],
             ),
             child: Padding(
@@ -46,7 +78,7 @@ class FoodCard extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Imagem (se tiver) ou ícone
+                  // imagem
                   ClipRRect(
                     borderRadius: BorderRadius.circular(12),
                     child: Container(
@@ -56,8 +88,6 @@ class FoodCard extends StatelessWidget {
                       child: imageUrl != null && imageUrl.isNotEmpty
                           ? Image.network(
                               imageUrl,
-                              width: 72,
-                              height: 72,
                               fit: BoxFit.cover,
                               errorBuilder: (_, __, ___) =>
                                   const Center(child: Icon(Icons.fastfood, color: Colors.white, size: 32)),
@@ -67,51 +97,45 @@ class FoodCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 16),
 
-                  // Texto principal
+                  // texto
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          item.alimento.nome,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
+                        Text(widget.item.alimento.nome,
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold)),
                         const SizedBox(height: 6),
-                        Text(
-                          item.alimento.descricao,
-                          style: const TextStyle(fontSize: 14, color: Colors.white70),
-                        ),
+                        Text(widget.item.alimento.descricao,
+                            style: const TextStyle(
+                                color: Colors.white70, fontSize: 14)),
                         const SizedBox(height: 8),
                         Text(
-                          'Validade: ${item.alimento.validade.day}/${item.alimento.validade.month}/${item.alimento.validade.year}',
-                          style: const TextStyle(fontSize: 13, color: Colors.white70),
+                          'Validade: ${widget.item.alimento.validade.day}/${widget.item.alimento.validade.month}/${widget.item.alimento.validade.year}',
+                          style: const TextStyle(color: Colors.white70, fontSize: 13),
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          'Quantidade: ${item.quantidade}',
-                          style: const TextStyle(fontSize: 13, color: Colors.white70),
+                          'Quantidade: ${widget.item.quantidade}',
+                          style: const TextStyle(color: Colors.white70, fontSize: 13),
                         ),
                       ],
                     ),
                   ),
 
-                  // Botão de deletar só aparece se eu for dono da doação
-                  if (_isOwner && onDelete != null)
+                  if (_isOwner && widget.onDelete != null)
                     IconButton(
                       icon: const Icon(Icons.delete_outline, color: Colors.white),
-                      onPressed: onDelete,
-                      tooltip: 'Remover minha doação',
+                      onPressed: widget.onDelete,
                     ),
                 ],
               ),
             ),
           ),
 
-          // Badge "Minha" no canto superior direito quando for minha doação
+          // selo “Minha”
           if (_isOwner)
             Positioned(
               right: 12,
@@ -119,12 +143,43 @@ class FoodCard extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withOpacity(0.25),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Text(
                   'Minha',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12),
+                ),
+              ),
+            ),
+
+          // selo “ONG” (se doador for tipo ONG)
+          if (isOng)
+            Positioned(
+              left: 12,
+              top: 10,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.lightBlueAccent.withOpacity(0.9),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: const [
+                    Icon(Icons.favorite, size: 14, color: Colors.white),
+                    SizedBox(width: 4),
+                    Text(
+                      'ONG',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12),
+                    ),
+                  ],
                 ),
               ),
             ),
