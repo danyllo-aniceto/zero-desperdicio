@@ -194,8 +194,8 @@ class _DonateFormScreenState extends ConsumerState<DonateFormScreen> {
                   ),
                   ElevatedButton.icon(
                     onPressed: _pickDate,
-                    icon: const Icon(Icons.calendar_today),
-                    label: const Text('Selecionar'),
+                    icon: const Icon(Icons.calendar_today, color: Colors.white,),
+                    label: const Text('Selecionar', style: TextStyle(color: Colors.white)),
                   ),
                 ],
               ),
@@ -205,8 +205,9 @@ class _DonateFormScreenState extends ConsumerState<DonateFormScreen> {
                   : Row(
                       children: [
                         Expanded(
-                          child: OutlinedButton(
+                          child: ElevatedButton(
                             onPressed: () => Navigator.pop(context),
+                            style: ElevatedButton.styleFrom(backgroundColor: Colors.white),
                             child: const Text('Cancelar'),
                           ),
                         ),
@@ -215,7 +216,7 @@ class _DonateFormScreenState extends ConsumerState<DonateFormScreen> {
                           child: ElevatedButton(
                             onPressed: _submit,
                             style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-                            child: const Text('Cadastrar'),
+                            child: const Text('Cadastrar', style: TextStyle(color: Colors.white),),
                           ),
                         ),
                       ],

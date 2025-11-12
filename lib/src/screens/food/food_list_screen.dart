@@ -136,6 +136,7 @@ class _FoodListScreenState extends ConsumerState<FoodListScreen>
             Tab(text: 'Disponíveis'),
             Tab(text: 'Minhas doações'),
           ],
+          labelColor: Colors.white,
         ),
       ),
       body: Column(

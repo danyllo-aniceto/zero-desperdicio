@@ -83,7 +83,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF7F8FA),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: const Color.fromARGB(255, 238, 255, 239),
         elevation: 3,
         automaticallyImplyLeading: false,
         titleSpacing: 0,
@@ -108,7 +108,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     child: Text(
                       AuthService.instance.currentUser.value!.name,
                       style: const TextStyle(
-                        color: Colors.black87,
+                        color: Color.fromARGB(255, 26, 49, 27),
                         fontWeight: FontWeight.w600,
                         fontSize: 16,
                       ),
@@ -116,7 +116,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 IconButton(
                   tooltip: 'Sair',
-                  icon: const Icon(Icons.logout, color: Colors.redAccent),
+                  icon: const Icon(Icons.logout, color: Color.fromARGB(255, 26, 49, 27)),
                   onPressed: () {
                     AuthService.instance.logout();
                     Navigator.of(context).pushReplacement(
@@ -142,13 +142,47 @@ class _DashboardScreenState extends State<DashboardScreen> {
           return CustomScrollView(
             slivers: [
               SliverToBoxAdapter(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: const [
-                  Text('Bem-vindo(a)! 💚', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black87)),
-                  SizedBox(height: 4),
-                  Text('Juntos contra o desperdício de alimentos.', style: TextStyle(fontSize: 15, color: Colors.black54)),
-                  SizedBox(height: 24),
-                ]),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // Imagem à esquerda
+                    Image.asset(
+                      'assets/images/logo_apple.png',
+                      width: 40, // ajuste o tamanho conforme necessário
+                      height: 40,
+                    ),
+                    const SizedBox(width: 12), // espaço entre a imagem e o texto
+
+                    // Textos à direita
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: const [
+                        Text(
+                          'Bem-vindo(a)!',
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          'Juntos contra o desperdício de alimentos.',
+                          style: TextStyle(
+                            fontSize: 15,
+                            color: Colors.black54,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
+
+              const SliverToBoxAdapter(
+                child: SizedBox(height: 20), // ajuste o valor conforme quiser
+              ),
+
               SliverGrid.count(
                 crossAxisCount: columns,
                 mainAxisSpacing: 20,
