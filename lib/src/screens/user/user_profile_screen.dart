@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import 'package:zero_desperdicio/src/data/mock_repository.dart';
 import 'package:zero_desperdicio/src/models/usuario_model.dart';
 import 'package:zero_desperdicio/src/services/auth_service.dart';
@@ -14,6 +15,10 @@ class UserProfileScreen extends StatefulWidget {
 class _UserProfileScreenState extends State<UserProfileScreen> {
   late TextEditingController _nameController;
   late TextEditingController _phoneController;
+  final phoneMask = MaskTextInputFormatter(
+    mask: '(##) #####-####',
+    filter: { "#": RegExp(r'[0-9]') },
+  );
   User? user;
 
   @override
@@ -107,6 +112,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             const SizedBox(height: 20),
             TextField(
               controller: _phoneController,
+              inputFormatters: [phoneMask],
               decoration: const InputDecoration(
                 labelText: 'Telefone',
                 border: OutlineInputBorder(),
@@ -118,8 +124,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                icon: const Icon(Icons.save),
-                label: const Text('Salvar alterações'),
+                icon: const Icon(Icons.save, color: Colors.white,),
+                label: const Text('Salvar alterações', style: TextStyle(color: Colors.white),),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue.shade700,
                   padding: const EdgeInsets.symmetric(vertical: 14),

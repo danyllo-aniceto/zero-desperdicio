@@ -155,6 +155,7 @@ class _MyDonationsScreenState extends State<MyDonationsScreen> with SingleTicker
             Tab(text: 'Minhas doações'),
             Tab(text: 'Recebidas'),
           ],
+          labelColor: Colors.white,
         ),
       ),
       body: TabBarView(

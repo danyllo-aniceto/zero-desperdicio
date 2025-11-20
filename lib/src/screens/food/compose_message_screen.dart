@@ -163,8 +163,8 @@ class _ComposeMessageScreenState extends State<ComposeMessageScreen> {
                 Expanded(
                   child: ElevatedButton.icon(
                     onPressed: _send,
-                    icon: const Icon(Icons.send),
-                    label: const Text('Enviar'),
+                    icon: const Icon(Icons.send, color: Colors.white,),
+                    label: const Text('Enviar', style: TextStyle(color: Colors.white),),
                     style: ElevatedButton.styleFrom(backgroundColor: Colors.green, padding: const EdgeInsets.symmetric(vertical: 14)),
                   ),
                 ),

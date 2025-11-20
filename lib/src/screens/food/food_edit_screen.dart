@@ -199,7 +199,7 @@ class _FoodEditScreenState extends State<FoodEditScreen> {
               children: [
                 Expanded(child: TextField(controller: _qtyCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Quantidade'))),
                 const SizedBox(width: 12),
-                ElevatedButton.icon(onPressed: _pickDate, icon: const Icon(Icons.calendar_today), label: Text('${_validade.day}/${_validade.month}/${_validade.year}')),
+                ElevatedButton.icon(onPressed: _pickDate, icon: const Icon(Icons.calendar_today, color: Colors.white,), label: Text('${_validade.day}/${_validade.month}/${_validade.year}', style: TextStyle(color: Colors.white),)),
               ],
             ),
             const SizedBox(height: 12),
@@ -229,9 +229,9 @@ class _FoodEditScreenState extends State<FoodEditScreen> {
             const Spacer(),
             Row(
               children: [
-                Expanded(child: OutlinedButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar'))),
+                Expanded(child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: Colors.white), onPressed: () => Navigator.pop(context), child: const Text('Cancelar'),)),
                 const SizedBox(width: 12),
-                Expanded(child: ElevatedButton(onPressed: _save, child: const Text('Salvar'))),
+                Expanded(child: ElevatedButton(onPressed: _save, child: const Text('Salvar', style: TextStyle(color: Colors.white),))),
               ],
             ),
           ],

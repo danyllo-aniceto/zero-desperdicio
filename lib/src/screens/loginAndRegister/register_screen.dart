@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import 'package:zero_desperdicio/src/data/mock_repository.dart';
 import 'package:zero_desperdicio/src/models/usuario_model.dart';
 import 'package:zero_desperdicio/src/services/auth_service.dart';
 import 'package:zero_desperdicio/src/models/user.dart';
 import 'package:zero_desperdicio/src/screens/home/dashboard_screen.dart';
+
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -17,6 +19,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _emailCtrl = TextEditingController();
   final _telCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
+  final phoneMask = MaskTextInputFormatter(
+    mask: '(##) #####-####',
+    filter: { "#": RegExp(r'[0-9]') },
+  );
+
   UserType _selectedType = UserType.normal;
   bool _loading = false;
 
@@ -130,11 +137,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               prefixIcon: Icon(Icons.email_outlined))),
                       const SizedBox(height: 12),
                       TextField(
-                          controller: _telCtrl,
-                          keyboardType: TextInputType.phone,
-                          decoration: const InputDecoration(
-                              labelText: 'Telefone (opcional)',
-                              prefixIcon: Icon(Icons.phone))),
+                        controller: _telCtrl,
+                        keyboardType: TextInputType.phone,
+                        inputFormatters: [phoneMask],
+                        decoration: const InputDecoration(
+                          labelText: 'Telefone (opcional)',
+                          prefixIcon: Icon(Icons.phone),
+                        ),
+                      ),
                       const SizedBox(height: 12),
                       TextField(
                           controller: _passCtrl,

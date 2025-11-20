@@ -76,7 +76,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         content: Text('Tem certeza que deseja alterar o status de "${user.nomeUsuario}" para "$newStatus"?'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
-          ElevatedButton(onPressed: () => Navigator.pop(context, true), child: const Text('Confirmar')),
+          ElevatedButton(onPressed: () => Navigator.pop(context, true), child: const Text('Confirmar', style: TextStyle(color: Colors.white),)),
         ],
       ),
     );

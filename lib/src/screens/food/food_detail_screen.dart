@@ -211,11 +211,6 @@ class _FoodDetailScreenState extends State<FoodDetailScreen> {
                         ],
                       ),
                     ),
-                    IconButton(
-                      tooltip: 'Enviar mensagem',
-                      onPressed: () => _showMessageOptions(context, widget.doacao),
-                      icon: const Icon(Icons.message, color: Colors.green),
-                    ),
                   ],
                 ),
               ),
@@ -233,13 +228,11 @@ class _FoodDetailScreenState extends State<FoodDetailScreen> {
                   onPressed: () {
                     Navigator.push(context, MaterialPageRoute(builder: (_) => ComposeMessageScreen(doacao: widget.doacao, action: 'receber')));
                   },
-                  icon: const Icon(Icons.handshake),
-                  label: const Text('Quero receber'),
+                  icon: const Icon(Icons.handshake, color: Colors.white,),
+                  label: const Text('Quero receber', style: TextStyle(color: Colors.white),),
                   style: ElevatedButton.styleFrom(backgroundColor: Colors.green, padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12)),
                 ),
               ),
-              const SizedBox(width: 12),
-              IconButton(onPressed: () => _showMessageOptions(context, widget.doacao), icon: const Icon(Icons.message, color: Colors.green)),
             ]),
           ] else ...[
             Row(children: [
@@ -257,8 +250,8 @@ class _FoodDetailScreenState extends State<FoodDetailScreen> {
                     Navigator.pop(context, 'updated');
                   }
                 },
-                icon: const Icon(Icons.edit),
-                label: const Text('Editar'),
+                icon: const Icon(Icons.edit, color: Colors.white,),
+                label: const Text('Editar', style: TextStyle(color: Colors.white),),
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
               ),
             ]),
